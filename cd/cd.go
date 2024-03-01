@@ -2,27 +2,59 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
-
-	"github.com/charmbracelet/log"
 )
 
-func main() {
-	args := os.Args
+func setFlags() map[string]*bool {
+	flags := []struct {
+		alias string
+		desc  string
+		def   bool
+	}{
+		{
+			alias: "n",
+			def:   false,
+			desc:  "Enable newline at the end",
+		},
+		{
+			alias: "h",
+			def:   false,
+			desc:  "Show help",
+		},
+	}
 
-	if len(args) > 1 {
-		filename := args[1]
+	aliases := map[string]*bool{}
+
+	for _, fg := range flags {
+		aliases[fg.alias] = flag.Bool(fg.alias, fg.def, fg.desc)
+	}
+
+	return aliases
+}
+
+func main() {
+	_ = setFlags()
+
+	flag.Parse()
+
+	args := flag.Args()
+
+	if len(args) > 0 {
+		filename := args[0]
 		file, err := os.OpenFile(filename, os.O_RDONLY, fs.FileMode.Perm(0777))
 		if err != nil {
-			log.Fatalf("Error opening file: %s", err)
+			fmt.Printf("Error opening file: %s", err)
+			os.Exit(1)
 		}
 
 		defer func() {
 			if err := file.Close(); err != nil {
-				log.Fatalf("Could not close file: %s", err)
+				fmt.Printf("Could not close file: %s", err)
+				os.Exit(1)
 			}
 		}()
 
@@ -41,7 +73,7 @@ func main() {
 			}
 		}
 
-		log.Printf("Contents of the file: %s\n%s", filename, fileContent)
+		fmt.Printf("Contents of the file: %s\n%s", filename, fileContent)
 	} else {
 		stat, _ := os.Stdin.Stat()
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
@@ -52,21 +84,22 @@ func main() {
 				stdin = append(stdin, byte('\n'))
 			}
 			if err := scanner.Err(); err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				os.Exit(1)
 			}
 			str := string(stdin)
-			log.Printf("stdin = %s\n", str)
+			fmt.Printf("%s", str)
 		} else {
 			read := bufio.NewReader(os.Stdin)
 			str, err := read.ReadString(byte(24))
 			if err != nil {
-				log.Fatalf("Could not read from command line: %s", err)
+				fmt.Printf("Could not read from command line: %s", err)
 			}
 
 			fmt.Printf("%s", str)
-            if str[len(str) - 1] != '\n'{
-                fmt.Print("\n")
-            }
+			if str[len(str)-1] != '\n' {
+				fmt.Print("\n")
+			}
 		}
 	}
 }
