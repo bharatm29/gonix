@@ -6,6 +6,7 @@ import (
 	"gonix/color"
 	"os"
 	"path/filepath"
+	"slices"
 )
 
 type File struct {
@@ -26,7 +27,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	dirs := []File{}
 	files := []File{}
 
 	filepath.WalkDir(flag.Arg(0), func(path string, items os.DirEntry, err error) error {
@@ -51,11 +51,10 @@ func main() {
 			}
 
 			if len(dirName) > 0 && dirName[0] == '.' {
-				if *hiddenFlag {
-					coloredName = (color.Colorize(color.GRAY, fmt.Sprintf("%s/ ", dirName)))
-				} else {
+				if !(*hiddenFlag) {
 					return filepath.SkipDir
 				}
+				coloredName = (color.Colorize(color.GRAY, fmt.Sprintf("%s/ ", dirName)))
 			} else {
 				coloredName = (color.Colorize(color.RED, fmt.Sprintf("%s/ ", dirName)))
 			}
@@ -66,7 +65,7 @@ func main() {
 				size:  float64(info.Size()) / 1000,
 				isDir: true,
 			}
-			dirs = append(dirs, dir)
+			files = append(files, dir)
 
 			return filepath.SkipDir
 		} else {
@@ -75,11 +74,10 @@ func main() {
 			var coloredName string
 
 			if len(fileName) > 0 && fileName[0] == '.' {
-				if *hiddenFlag {
-					coloredName = color.Colorize(color.GRAY, fmt.Sprintf("%s ", fileName))
-				} else {
+				if !(*hiddenFlag) {
 					return nil
 				}
+				coloredName = color.Colorize(color.GRAY, fmt.Sprintf("%s ", fileName))
 			} else {
 				coloredName = color.Colorize(color.BLUE, fmt.Sprintf("%s ", fileName))
 			}
@@ -95,13 +93,16 @@ func main() {
 		}
 	})
 
-	for _, dir := range dirs {
-		if *longFlag {
-			fmt.Printf("%s %.1fk %s\n", dir.perms, dir.size, dir.name)
+	// TODO: ensure hidden files are first in order
+	slices.SortFunc(files, func(f1, f2 File) int {
+		if f1.isDir && !f2.isDir {
+			return -1
+		} else if !f1.isDir && f2.isDir {
+			return 1
 		} else {
-			fmt.Printf("%s ", dir.name)
+			return 0
 		}
-	}
+	})
 
 	for _, file := range files {
 		if *longFlag {
