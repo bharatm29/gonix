@@ -18,13 +18,13 @@ func main() {
 		filename := flag.Arg(0)
 		file, err := os.OpenFile(filename, os.O_RDONLY, fs.FileMode.Perm(0777))
 		if err != nil {
-			fmt.Printf("Error opening file: %s", err)
+			fmt.Fprintf(os.Stderr, "Error opening file: %s", err)
 			os.Exit(1)
 		}
 
 		defer func() {
 			if err := file.Close(); err != nil {
-				fmt.Printf("Could not close file: %s", err)
+				fmt.Fprintf(os.Stderr, "Could not close file: %s", err)
 				os.Exit(1)
 			}
 		}()
@@ -59,7 +59,7 @@ func main() {
 			for i := 0; i < *lineNumbers; i++ {
 				str, err := read.ReadString('\n')
 				if err != nil {
-					fmt.Printf("Could not read from command line: %s", err)
+					fmt.Fprintf(os.Stderr, "Could not read from command line: %s", err)
 				}
 
 				fmt.Printf("%s", str)
